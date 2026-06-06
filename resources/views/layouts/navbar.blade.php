@@ -10,9 +10,6 @@
 
     <div class="d-flex align-items-center gap-3">
 
-        <i class="bi bi-bell"></i>
-        <i class="bi bi-question-circle"></i>
-
         @auth
         <div class="d-flex align-items-center">
 

@@ -33,123 +33,106 @@
     <!-- Statistik -->
     <div class="row g-3 mb-4">
 
-        <div class="col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <small class="text-muted">TOTAL KATEGORI</small>
-                    <h3 class="fw-bold">12</h3>
-                </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <small class="text-muted fw-semibold text-uppercase">Total Kategori</small>
+                <h3 class="fw-bold text-primary mt-1">{{ $totalKategori }}</h3>
             </div>
         </div>
-
-        <div class="col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <small class="text-muted">TUGAS TERKAIT</small>
-                    <h3 class="fw-bold">48</h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <small class="text-muted">PALING AKTIF</small>
-                    <h3 class="fw-bold">Design</h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <small class="text-muted">TERAKHIR DIPERBARUI</small>
-                    <h3 class="fw-bold">2j lalu</h3>
-                </div>
-            </div>
-        </div>
-
     </div>
+
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <small class="text-muted fw-semibold text-uppercase">Tugas Terkait</small>
+                <h3 class="fw-bold text-success mt-1">{{ $totalTugas }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <small class="text-muted fw-semibold text-uppercase">Paling Aktif</small>
+                <h3 class="fw-bold text-warning mt-1 text-truncate" title="{{ $palingAktif }}">
+                    {{ $palingAktif }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <small class="text-muted fw-semibold text-uppercase">Terakhir Diperbarui</small>
+                <h3 class="fw-bold text-danger mt-1 fs-4 text-truncate">
+                    {{ $waktuUpdate }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+</div>
 
     <!-- Table -->
-    <div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover align-middle border-0">
+        <thead class="table-light text-secondary">
+            <tr>
+                <th scope="col" style="width: 40%;">Nama Kategori & Deskripsi</th>
+                <th scope="col" style="width: 20%;">Jumlah Tugas</th>
+                <th scope="col" style="width: 20%;">Status</th>
+                <th scope="col" class="text-center" style="width: 20%;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($categories as $category)
+            <tr>
+                <td>
+                    <div class="fw-bold text-dark">{{ $category->nama_kategori }}</div>
+                    @if($category->deskripsi)
+                        <small class="text-muted d-block mt-1">
+                            {{ $category->deskripsi }}
+                        </small>
+                    @else
+                        <small class="text-muted d-block mt-1-italic">- Tidak ada deskripsi -</small>
+                    @endif
+                </td>
 
-        <div class="card-body p-0">
+                <td>
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+                        {{ $category->tugas_count ?? 0 }} Tugas
+                    </span>
+                </td>
 
-            <table class="table table-hover align-middle mb-0">
+                <td>
+                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded">
+                        {{ $category->status ?? 'Aktif' }}
+                    </span>
+                </td>
 
-                <thead class="table-light">
-                    <tr>
-                        <th>Nama Kategori</th>
-                        <th>Tugas Terkait</th>
-                        <th>Status</th>
-                        <th class="text-center">Aksi</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">Design Studio</div>
-                            <small class="text-muted">
-                                UI/UX and Interaction Projects
-                            </small>
-                        </td>
-
-                        <td>14 Tugas</td>
-
-                        <td>
-                            <span class="badge bg-success">
-                                Aktif
-                            </span>
-                        </td>
-
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-outline-warning">
-                                Edit
-                            </button>
-
-                            <button class="btn btn-sm btn-outline-danger">
-                                Hapus
-                            </button>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">Web Dev</div>
-                            <small class="text-muted">
-                                Frontend dan Backend Development
-                            </small>
-                        </td>
-
-                        <td>22 Tugas</td>
-
-                        <td>
-                            <span class="badge bg-success">
-                                Aktif
-                            </span>
-                        </td>
-
-                        <td class="text-center">
-                            <button class="btn btn-sm btn-outline-warning">
-                                Edit
-                            </button>
-
-                            <button class="btn btn-sm btn-outline-danger">
-                                Hapus
-                            </button>
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
+                <td class="text-center">
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-sm btn-outline-warning px-3">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger px-3">
+                            <i class="bi bi-trash"></i> Hapus
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                    <span class="d-block mb-2">📂</span> Belum ada data kategori tersedia.
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
 
 </div>
 </div>

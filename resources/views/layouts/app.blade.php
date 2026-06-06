@@ -12,5 +12,46 @@
 <body>
     @yield('content')
 
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        // 3. Mengambil data dari variabel Controller
+        const dataBelum = {{ $belum ?? 0 }};
+        const dataProses = {{ $proses ?? 0 }};
+        const dataSelesai = {{ $selesai ?? 0 }};
+
+        // 4. Konfigurasi Grafik
+        const ctx = document.getElementById('statusTaskChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut', // Jenis grafik lingkaran/donat
+            data: {
+                labels: ['Belum Dikerjakan', 'Sedang Dikerjakan', 'Selesai'],
+                datasets: [{
+                    data: [dataBelum, dataProses, dataSelesai],
+                    backgroundColor: [
+                        '#6c757d', // Abu-abu untuk Pending/Belum
+                        '#ffc107', // Kuning untuk Progress/Sedang
+                        '#198754'  // Hijau untuk Selesai/Completed
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom', // Posisi keterangan warna di bawah
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15
+                        }
+                    }
+                }
+            }
+        });
+    });
+    </script>
 </body>
 </html>

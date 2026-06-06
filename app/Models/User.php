@@ -19,8 +19,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'nama',
+        'kelas',
         'email',
         'password',
+        'nisn',
+        'phone',
+        'enrollment_year',
     ];
 
     /**
@@ -42,4 +46,13 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+    public function getNameAttribute()
+    {
+        return $this->nama;
+    }
+
+    public function tasks()
+{
+    return $this->hasMany(Tugas::class);
+}
 }

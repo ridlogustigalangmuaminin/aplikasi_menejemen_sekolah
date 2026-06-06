@@ -139,9 +139,9 @@
         </div>
 
         <div class="card-body">
-
-            
-
+            <div style="position: relative; height:250px; width:100%">
+            <canvas id="statusTaskChart"></canvas>
+        </div>
         </div>
     </div>
 
