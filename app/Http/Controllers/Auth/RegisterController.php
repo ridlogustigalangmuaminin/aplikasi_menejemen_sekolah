@@ -22,7 +22,7 @@ class RegisterController extends Controller
             'kelas' => 'nullable|string|max:50',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'nisn' => ['required', 'numeric', 'max:10', 'min:10'],
+            'nisn' => ['required', 'numeric', 'digits:10'],
         'phone' => ['required', 'string', 'max:16','min:12'],
         'enrollment_year' => ['required', 'numeric', 'digits:4'],
 

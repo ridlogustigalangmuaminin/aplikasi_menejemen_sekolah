@@ -28,23 +28,25 @@
                     <div class="card-body p-4">
                         {{-- Logika Pengecekan Waktu & Masa Hangus Tugas --}}
                         @php
-                            $isGuru = auth()->user()->email == 'admin@gmail.com';
-                            $sekarang = \Carbon\Carbon::now();
-                            $waktuDeadline = \Carbon\Carbon::parse($task->deadline . ' ' . ($task->jam_deadline ?? '23:59:59'));
-                            $isHangus = $sekarang->gt($waktuDeadline);
-                            
-                            // Logika QA: Siswa hanya bisa edit status maksimal 2 jam sejak update terakhir
-                            $isBatasEditHabis = false;
-                            if (!$isGuru && $task->updated_at && $task->status_id != 1) { // 1 = Belum dikerjakan
-                                $isBatasEditHabis = $sekarang->diffInHours($task->updated_at) > 2;
-                            }
-                        @endphp
+    $isGuru = auth()->user()->email == 'admin@gmail.com';
+    $sekarang = \Carbon\Carbon::now();
+    $waktuDeadline = \Carbon\Carbon::parse($task->deadline . ' ' . ($task->jam_deadline ?? '23:59:59'));
+    $isHangus = $sekarang->gt($waktuDeadline);
+    
+    $isBatasEditHabis = false;
+    if (!$isGuru && $task->updated_at && $task->status_id != 1) {
+        $isBatasEditHabis = $sekarang->diffInHours($task->updated_at) > 2;
+    }
 
-                        <form action="{{ route('task.update', $task->id) }}" method="POST" enctype="multipart/form-data">
+    // Mengambil data lampiran berdasarkan struktur asli kamu    
+    $lampiranJawaban = \App\Models\Lampiran::where('tugas_id', $task->id)->first();
+@endphp
+
+                        <form id="formTask" action="{{ route('task.update', $task->id) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
 
-                            {{-- Jika siswa, backup data tersembunyi agar Controller tidak kehilangan data input yang ter-lock --}}
+                            {{-- Jika siswa, kunci data soal asli agar tidak hilang atau ter-overwrite --}}
                             @if(!$isGuru)
                                 <input type="hidden" name="judul_tugas" value="{{ $task->judul_tugas }}">
                                 <input type="hidden" name="deskripsi" value="{{ $task->deskripsi }}">
@@ -53,29 +55,39 @@
                                 <input type="hidden" name="jam_deadline" value="{{ $task->jam_deadline ?? '23:59' }}">
                             @endif
 
-                            {{-- INPUT JUDUL TASK --}}
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Judul Task</label>
-                                <input 
-                                    type="text" 
-                                    name="judul_tugas" 
-                                    class="form-control" 
-                                    value="{{ old('judul_tugas', $task->judul_tugas) }}"
-                                    {{ !$isGuru ? 'readonly bg-light' : '' }}
-                                    required
-                                >
-                            </div>
+                            {{-- TAMPILAN JIKA LOGIN SEBAGAI GURU/ADMIN --}}
+                            @if($isGuru)
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Judul Task</label>
+                                    <input 
+                                        type="text" 
+                                        name="judul_tugas" 
+                                        class="form-control" 
+                                        value="{{ old('judul_tugas', $task->judul_tugas) }}"
+                                        required
+                                    >
+                                </div>
 
-                            {{-- INPUT DESKRIPSI --}}
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Deskripsi</label>
-                                <textarea 
-                                    name="deskripsi" 
-                                    class="form-control" 
-                                    rows="4"
-                                    {{ !$isGuru ? 'readonly bg-light' : '' }}
-                                >{{ old('deskripsi', $task->deskripsi) }}</textarea>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Deskripsi Soal (Guru)</label>
+                                    <textarea 
+                                        name="deskripsi" 
+                                        class="form-control" 
+                                        rows="4"
+                                    >{{ old('deskripsi', $task->deskripsi) }}</textarea>
+                                </div>
+                            @else
+                                {{-- TAMPILAN INFORMASI SOAL UNTUK SISWA --}}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Judul Task</label>
+                                    <input type="text" class="form-control bg-light" value="{{ $task->judul_tugas }}" readonly>
+                                </div>
+
+                                <div class="mb-4 p-3 border border-info rounded bg-light">
+                                    <label class="form-label fw-bold text-info"><i class="bi bi-info-circle-fill"></i> Deskripsi Soal Dari Guru:</label>
+                                    <p class="mb-0 text-dark" style="white-space: pre-line;">{{ $task->deskripsi ?? 'Tidak ada deskripsi soal.' }}</p>
+                                </div>
+                            @endif
 
                             {{-- DROPDOWN KATEGORI (GURU EDIT, SISWA HANYA INFO) --}}
                             <div class="mb-3">
@@ -95,7 +107,7 @@
                                 @endif
                             </div>
 
-                            {{-- INPUT TANGGAL DEADLINE + TAMBAH JAM DEADLINE (HASIL QA) --}}
+                            {{-- INPUT TANGGAL DEADLINE --}}
                             <div class="row mb-3">
                                 <div class="col-md-6 mb-3 mb-md-0">
                                     <label class="form-label fw-bold">Tanggal Batas Pengumpulan</label>
@@ -133,7 +145,7 @@
                                     ⚠️ BATAS UBAH DATA HABIS: Progres tugas ini sudah tidak dapat diubah lagi karena telah melewati batas toleransi pengubahan (Maksimal 2 Jam).
                                 </div>
                             @else
-                                {{-- DROPDOWN STATUS (TERBUKA UNTUK UPDATE PROGRES) --}}
+                                {{-- DROPDOWN STATUS --}}
                                 <div class="mb-4">
                                     <label class="form-label fw-bold text-uppercase text-primary small">Status Progress Tugas</label>
                                     <select id="status_id" name="status_id" class="form-select form-select-lg border-2 border-primary fw-semibold">
@@ -154,23 +166,22 @@
                                     </small>
                                 </div>
 
-                                {{-- FITUR INPUT BUKTI FOTO TUGAS (HANYA MUNCUL UNTUK SISWA - HASIL QA) --}}
-                                @if(!$isGuru)
-                                    <div class="mb-4 p-3 bg-light border border-2 rounded">
-                                        <label class="form-label fw-bold text-dark">Upload Bukti Foto Hasil Tugas <span class="text-danger">*</span></label>
-                                        <input type="file" name="image" class="form-control">
-                                        <small class="text-secondary d-block mt-1">Ekstensi gambar diperbolehkan: JPG, JPEG, PNG (Maksimal ukuran file: 2MB).</small>
-                                        
-                                        @if($task->lampirans && $task->lampirans->count())
-                                            @php $lampiranTerakhir = $task->lampirans->last(); @endphp
-                                            <div class="mt-3 p-2 bg-white border rounded">
-                                                <small class="text-muted d-block mb-2 fw-bold text-success">✓ Bukti Foto yang Sudah Terunggah Sebelumnya:</small>
-                                                <img src="{{ asset('storage/' . $lampiranTerakhir->file_path) }}" class="img-fluid rounded border shadow-sm" style="max-height: 200px; object-fit: contain;">
-                                            </div>
-                                        @endif
-
-                                    </div>
-                                @endif
+                                {{-- INPUT JAWABAN TEKS SISWA (DIALIKKAN KE TABEL LAMPIRAN) --}}
+                                {{-- INPUT JAWABAN TEKS SISWA (MASUK KE KOLOM FILE_NAME) --}}
+@if(!$isGuru)
+    <div class="mb-4 p-3 bg-light border border-2 rounded">
+        <label class="form-label fw-bold text-dark">Jawaban Tugas (Simpan Ke Lampiran) <span class="text-danger">*</span></label>
+        <textarea
+    name="jawaban_siswa"  class="form-control"
+    rows="5"
+    placeholder="Tulis lembar jawaban kamu di sini berdasarkan petunjuk soal di atas..."
+    required
+>{{ old('jawaban_siswa', $lampiranJawaban ? $lampiranJawaban->file_name : '') }}</textarea>{{-- Menggunakan file_name --}}
+        <small class="text-danger d-block mt-2 fw-semibold">
+            ⚠️ PENTING: Anda memiliki waktu 30 menit setelah mengirim jawaban untuk melakukan perubahan kembali!
+        </small>
+    </div>
+@endif
 
                                 <div class="mt-4 pt-2 border-top">
                                     <a href="{{ route('task.index') }}" class="btn btn-secondary px-4">Kembali</a>
@@ -186,4 +197,35 @@
         </div>
     </div>
 </div>
+
+{{-- JAVASCRIPT ALERT KONFIRMASI SAAT KLIK TOMBOL SIMPAN --}}
+<script>
+    document.getElementById('formTask').addEventListener('submit', function(e) {
+        // Cek jika yang login bukan guru/admin, maka jalankan alert konfirmasi 30 menit
+        @if(auth()->user()->email != 'admin@gmail.com')
+            e.preventDefault(); // Tahan form agar tidak langsung mengirim data
+            
+            let yakin = confirm("Apakah Anda yakin ingin menyimpan perubahan jawaban?\n\nPERINGATAN: Setelah tombol ditekan, Anda hanya diberikan batas toleransi waktu 30 menit untuk mengubah jawaban ini kembali!");
+            
+            if (yakin) {
+                this.submit(); // Kirim data jika klik OK
+            }
+        @endif
+    });
+</script>
+
+{{-- SCRIPT SIKLUS DELAY 30 MENIT --}}
+@if (session('success'))
+<script>
+    (function () {
+        const success = @json(session('success'));
+        const delayMs = 30 * 60 * 1000; // 30 menit
+
+        setTimeout(function () {
+            alert('✅ ' + success + '\n\n⏳ Peringatan: Perubahan sudah tersimpan. Pastikan yakin menyimpan perubahan.');
+        }, delayMs);
+    })();
+</script>
+@endif
+
 @endsection

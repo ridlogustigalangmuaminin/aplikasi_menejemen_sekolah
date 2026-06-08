@@ -157,7 +157,7 @@
       <div style="width: 100%; max-width: 380px; padding: 40px 32px;">
 
         <div class="form-title mb-1 fs-1">Masuk ke akun</div>
-        <p class="mb-4" style="font: size 20px; color:#6b7c93;">Selamat datang kembali 👋</p>
+        <p class="mb-4" style="font: size 20px; color:#6b7c93;">Selamat datang 👋</p>
 
         {{-- Alert Error --}}
         @if($errors->any())

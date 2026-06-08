@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Tugas as Task;
 use App\Models\KategoriTugas as Kategori;
 use App\Models\StatusTugas;
-use App\Models\User; // Tambahkan ini jika ingin mengambil list siswa
+use App\Models\User;
+use App\Models\Lampiran;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -17,18 +18,23 @@ class TaskController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        // Jika admin/guru, ambil semua data tugas di aplikasi beserta relasi kategorinya
-        if (auth()->user()->email == 'admin@gmail.com') {
-            $tasks = Task::with(['status', 'kategori'])->latest()->get();
-        } else {
-            // Jika siswa, hanya ambil data tugas yang 'user_id' nya cocok dengan id siswa tersebut
-            $tasks = Task::with(['status', 'kategori'])->where('user_id', auth()->user()->id)->latest()->get();
-        }
+{
+    $isAdmin = auth()->user()->email == 'admin@gmail.com';
 
-        return view('task.index', compact('tasks'));
+    if ($isAdmin) {
+        // PASTIKAN ada 'lampiran' atau 'lampirans' di dalam array with()
+        $tasks = Task::with(['status', 'kategori', 'user', 'lampirans']) 
+            ->latest()
+            ->get();
+    } else {
+        $tasks = Task::with(['status', 'kategori', 'lampirans'])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->get();
     }
 
+    return view('task.index', compact('tasks'));
+}
     /**
      * Show the form for creating a new resource.
      */
@@ -52,43 +58,36 @@ class TaskController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        // 1. Validasi: pastikan nama yang dicek adalah 'image' sesuai HTML kamu
-        $request->validate([
-            'judul_tugas' => 'required|string|max:255',
-            'deadline' => 'required|date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Maksimal 2MB
-        ]);
+{
+    // 1. Validasi Input Form
+    $request->validate([
+        'judul_tugas' => 'required|string|max:255',
+        'kategori_id' => 'required',
+        'deadline'    => 'required|date',
+    ]);
 
-        // 2. Inisialisasi Model Tugas / Task
-        $task = new Task();
-        $task->user_id = auth()->id();
-        $task->judul_tugas = $request->judul_tugas;
-        $task->deadline = $request->deadline;
-        $task->jam_deadline = $request->jam_deadline ?? '23:59:00';
-        $task->status_id = 1; // Default status: Belum Mulai
+    // 2. Ambil semua data user yang merupakan SISWA (bukan admin)
+    $students = \App\Models\User::where('email', '!=', 'admin@gmail.com')->get();
 
-        // 3. PROSES UPLOAD (disimpan ke tabel lampirans)
-        if (!$request->hasFile('image')) {
-            return redirect()->back()->withInput()->with('error', 'File bukti tidak terbaca oleh sistem.');
-        }
-
-        $file = $request->file('image');
-        $namaFile = time() . '_' . $file->getClientOriginalName();
-
-        $path = $file->storeAs('public/bukti', $namaFile);
-
-        // simpan dulu tugas
-        $task->save();
-
-        // simpan lampiran
-        $task->lampirans()->create([
-            'file_name' => $namaFile,
-            'file_path' => $path,
-        ]);
-
-        return redirect()->route('dashboard')->with('success', 'Tugas berhasil disimpan beserta bukti foto!');
+    if ($students->isEmpty()) {
+        return redirect()->back()->with('error', 'Gagal membuat tugas! Belum ada data siswa yang terdaftar di aplikasi.');
     }
+
+    // 3. SEBARKAN TUGAS KE SEMUA SISWA (Looping)
+    foreach ($students as $student) {
+        $task = new \App\Models\Tugas();
+        $task->user_id     = $student->id; // <-- Tugas dikunci ke ID masing-masing siswa!
+        $task->kategori_id = $request->kategori_id;
+        $task->judul_tugas = $request->judul_tugas;
+        $task->deskripsi   = $request ->deskripsi;
+        $task->deadline     = $request->deadline;
+
+        $task->status_id    = 1; // Default: Belum Mulai
+        $task->save();
+    }
+
+    return redirect()->route('task.index')->with('success', 'Tugas baru berhasil dibuat dan otomatis dibagikan ke semua siswa!');
+}
 
 
     /**
@@ -113,85 +112,51 @@ class TaskController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Task $task)
+    public function update(Request $request, $id)
     {
+        // 1. Ambil data tugas berdasarkan ID yang sedang diedit
+        $task = \App\Models\Tugas::findOrFail($id); // Sesuaikan nama model Tugas / Task kamu
         $isGuru = auth()->user()->email == 'admin@gmail.com';
-        $sekarang = \Carbon\Carbon::now();
-        $waktuDeadline = \Carbon\Carbon::parse($task->deadline . ' ' . ($task->jam_deadline ?? '23:59:59'));
 
         if (!$isGuru) {
+            $sekarang = \Carbon\Carbon::now();
 
-            if ($sekarang->gt($waktuDeadline)) {
-                return back()->withErrors(['error' => 'Tugas sudah HANGUS'])->withInput();
-            }
+            // 2. Ambil data lampiran yang sudah ada untuk tugas ini (jika ada)
+            $lampiran = \App\Models\Lampiran::where('tugas_id', $task->id)->first();
 
-            if ($task->updated_at && $task->status_id != 1 && $sekarang->diffInHours($task->updated_at) > 2) {
-                return back()->withErrors(['error' => 'Batas edit sudah habis'])->withInput();
-            }
+            if ($lampiran) {
+                // Cek batas toleransi edit jawaban (30 menit)
+                $waktuKirim = \Carbon\Carbon::parse($lampiran->created_at);
+                $selisihMenit = $waktuKirim->diffInMinutes($sekarang);
 
-            $request->validate([
-                'status_id' => 'required',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
-            ]);
-
-            if ($request->hasFile('image')) {
-                // hapus lampiran lama (ambil yang terakhir saja)
-                $lampiranLama = $task->lampirans()->latest()->first();
-                if ($lampiranLama && $lampiranLama->file_path) {
-                    \Storage::disk('public')->delete($lampiranLama->file_path);
+                if ($selisihMenit > 30) {
+                    return redirect()->back()->with('error', 'Gagal! Batas toleransi waktu 30 menit untuk mengubah jawaban telah habis.');
                 }
 
-                $file = $request->file('image');
-                $namaFile = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('bukti_tugas', $namaFile, 'public');
-
-                $task->lampirans()->create([
-                    'file_name' => $namaFile,
-                    'file_path' => $path,
+                // UPDATE LAMPIRAN JIKA SUDAH PERNAH MENGISI
+                $lampiran->update([
+                    'file_name' => $request->jawaban_siswa, // Menangkap input name="jawaban_siswa" dari Blade
+                    'file_path' => 'text_input'
+                ]);
+            } else {
+                Lampiran::create([
+                    'tugas_id' => $task->id,
+                    'file_name' => (string) $request->input('jawaban_siswa', ''),
+                    'file_path' => 'text_input',
                 ]);
             }
 
-            $task->status_id = $request->status_id;
-
-        } else {
-
-            $request->validate([
-                'judul_tugas' => 'required',
-                'kategori_id' => 'required',
-                'deadline' => 'required',
-                'jam_deadline' => 'required',
-                'status_id' => 'required',
-            ]);
-
+            // Siswa hanya mengupdate status progres tugasnya saja di tabel tugas
             $task->update([
-                'judul_tugas' => $request->judul_tugas,
-                'deskripsi' => $request->deskripsi,
-                'kategori_id' => $request->kategori_id,
-                'deadline' => $request->deadline,
-                'jam_deadline' => $request->jam_deadline,
                 'status_id' => $request->status_id,
             ]);
 
-            if ($request->hasFile('image')) {
-                $lampiranLama = $task->lampirans()->latest()->first();
-                if ($lampiranLama && $lampiranLama->file_path) {
-                    \Storage::disk('public')->delete($lampiranLama->file_path);
-                }
-
-                $file = $request->file('image');
-                $namaFile = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('bukti_tugas', $namaFile, 'public');
-
-                $task->lampirans()->create([
-                    'file_name' => $namaFile,
-                    'file_path' => $path,
-                ]);
-            }
+        } else {
+            // Logika jika Guru/Admin yang mengubah instrumen soal asli
+            $task->update($request->all());
         }
 
-        $task->save();
-
-        return redirect()->route('task.index')->with('success', 'Tugas berhasil diupdate');
+        return redirect()->route('task.index')->with('success', 'Perubahan berhasil disimpan!');
     }
 
     /**

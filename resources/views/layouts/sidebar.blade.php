@@ -32,10 +32,6 @@
                 <i class="bi bi-person"></i> Profile
             </a>
         </div>
-
-        <button class="btn btn-success w-100 mt-3">
-            + New Task
-        </button>
     </div>
 
     <!-- Bawah -->

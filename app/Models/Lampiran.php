@@ -10,13 +10,12 @@ class Lampiran extends Model
 {
     use HasFactory;
 
-    protected $table = 'lampiran';
+    protected $table = 'lampirans';
 
     protected $fillable = [
         'tugas_id',
-        'nama_file',
-        'path',
-        'type'
+        'file_name',
+        'file_path',
     ];
 
     public function tugas()

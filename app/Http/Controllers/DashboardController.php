@@ -8,32 +8,45 @@ class DashboardController extends Controller
 {
     public function index()
 {
-    // 1. Ambil ID User yang sedang login
-    $userId = auth()->id();
+    $isAdmin = auth()->user()->email == 'admin@gmail.com';
 
-    // 2. Gunakan model Tugas (bukan Task, agar sinkron dengan Controller kemarin)
-    $totalTugas =Tugas::where('user_id', $userId)->count();
+    if ($isAdmin) {
+        // Ambil semua tugas dari semua siswa untuk ditampilkan di dashboard admin
+        $tasks =Tugas::with(['user', 'kategori', 'lampirans'])
+            ->latest()
+            ->take(5) // Ambil 5 tugas terbaru saja untuk ringkasan dashboard
+            ->get();
 
-    // 3. Hitung status berdasarkan ID Status (Jauh lebih aman daripada teks string)
-    // Asumsi ID: 1 = Belum Mulai / Pending, 2 = Dikerjakan / Progress, 3 = Selesai / Completed
-    $belum = Tugas::where('user_id', $userId)->where('status_id', 1)->count();
-    $proses = Tugas::where('user_id', $userId)->where('status_id', 2)->count();
-    $selesai = Tugas::where('user_id', $userId)->where('status_id', 3)->count();
+        // Hitung statistik untuk counter box di atas dashboard
+        $totalTasks = Tugas::count();
+        $belumDikerjakan =Tugas::whereDoesntHave('lampirans')->count();
+        $selesai = Tugas::whereHas('lampirans', function($q) {
+            $q->where('is_accepted', 1);
+        })->count();
+        $sedangDikerjakan = $totalTasks - ($belumDikerjakan + $selesai);
 
-    // 4. Ambil 5 tugas terbaru milik user ini lengkap dengan relasi statusnya
-    $recentTasks = Tugas::where('user_id', $userId)
-        ->with('status')
-        ->latest()
-        ->take(5)
-        ->get(); // Menghasilkan Object Collection, dijamin tidak void lagi
+    } else {
+        // Jika yang login Siswa biasa
+        $tasks = Tugas::where('user_id', auth()->id())
+            ->with(['kategori', 'lampirans'])
+            ->latest()
+            ->take(5)
+            ->get();
 
-    // 5. Kirimkan data ke view
-    return view('dashboard', compact(
-        'totalTugas',
-        'belum',
-        'proses',
-        'selesai',
-        'recentTasks'
-    ));
+        $totalTasks =Tugas::where('user_id', auth()->id())->count();
+        $belumDikerjakan = Tugas::where('user_id', auth()->id())->whereDoesntHave('lampirans')->count();
+        $selesai = Tugas::where('user_id', auth()->id())->whereHas('lampirans', function($q) {
+            $q->where('is_accepted', 1);
+        })->count();
+        $sedangDikerjakan = $totalTasks - ($belumDikerjakan + $selesai);
+    }
+
+    return view('dashboard', [
+    'recentTasks'      => $tasks,             
+    'totalTugas'       => $totalTasks,     
+    'belum'            => $belumDikerjakan,   
+    'proses'           => $sedangDikerjakan,  
+    'selesai'          => $selesai 
+]);
 }
 }

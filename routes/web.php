@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profil/deactivate', [ProfilController::class, 'deactivate'])
         ->name('profile.deactivate');
 
+    Route::get('/categories/{id}/review', [CategoryController::class, 'reviewAnswers'])->name('categories.review');
+    Route::post('/lampiran/{id}/toggle-acc', [CategoryController::class, 'toggleAccCategory'])->name('lampiran.categoryAcc');
+
 });
 
 

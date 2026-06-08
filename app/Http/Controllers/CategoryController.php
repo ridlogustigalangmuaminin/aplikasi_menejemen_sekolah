@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KategoriTugas as Category;
 use App\Models\Tugas as Task;
+use App\Models\Lampiran;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -122,4 +123,46 @@ class CategoryController extends Controller
 
         return redirect()->route('categories.index')->with('success', 'Kategori telah berhasil dihapus!');
     }
+
+    public function reviewAnswers($id)
+{
+    if (auth()->user()->email != 'admin@gmail.com') {
+        abort(403, 'Hanya Admin yang dapat meninjau kategori ini.');
+    }
+
+    $category = Category::findOrFail($id);
+
+    // Kita tambahkan .user di dalam with() agar nama siswa ikut terbawa
+    $submissions = Lampiran::whereHas('tugas', function($query) use ($id) {
+        $query->where('kategori_id', $id);
+    })->with(['tugas.user'])->latest()->get(); // <-- Perubahan ada di sini
+
+    return view('categories.review', compact('category', 'submissions'));
+}
+
+/**
+ * Proses Centang / Uncentang ACC Jawaban Siswa
+ */
+public function toggleAccCategory(Request $request, $id)
+{
+    // Pastikan hanya admin@gmail.com yang bisa akses
+    if (auth()->user()->email != 'admin@gmail.com') {
+        abort(403);
+    }
+
+    // Cari data lampiran/jawaban berdasarkan ID
+    $lampiran = Lampiran::findOrFail($id);
+
+    // BACA REQUEST: Jika switch ON, request 'is_accepted' akan dikirim. Jika OFF, dia tidak ikut terkirim (null)
+    if ($request->has('is_accepted') || $request->input('is_accepted') == '1') {
+        $lampiran->is_accepted = 1;
+    } else {
+        $lampiran->is_accepted = 0;
+    }
+
+    // Simpan paksa ke database
+    $lampiran->save();
+
+    return redirect()->back()->with('success', 'Verifikasi status ACC berhasil diperbarui!');
+}
 }

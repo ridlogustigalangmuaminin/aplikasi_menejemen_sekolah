@@ -126,9 +126,12 @@
                                         <!-- Tombol Aksi -->
                                         <td class="py-3 pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <button class="btn btn-sm btn-outline-warning px-3 rounded-pill fw-semibold fs-7 d-inline-flex align-items-center gap-1">
-                                                    <i class="bi bi-pencil-square"></i> Edit
-                                                </button>
+                                                @if(auth()->user()->email == 'admin@gmail.com')
+                                                    <a href="{{ route('categories.review', $category->id) }}" class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-semibold fs-7 d-inline-flex align-items-center gap-1">
+                                                        <i class="bi bi-eye-fill"></i> Lihat
+                                                    </a>
+                                                @endif
+                                                
                                                 <button class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-semibold fs-7 d-inline-flex align-items-center gap-1">
                                                     <i class="bi bi-trash3-fill"></i> Hapus
                                                 </button>
