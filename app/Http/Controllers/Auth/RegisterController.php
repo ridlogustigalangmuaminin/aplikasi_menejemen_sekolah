@@ -18,12 +18,12 @@ class RegisterController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required',
-            'kelas' => 'nullable',
+            'nama' => 'required|string|max:255|',
+            'kelas' => 'nullable|string|max:50',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
-            'nisn' => ['required', 'string', 'max:20'],
-        'phone' => ['required', 'string', 'max:20'],
+            'password' => 'required|string|min:8|confirmed',
+            'nisn' => ['required', 'numeric', 'max:10', 'min:10'],
+        'phone' => ['required', 'string', 'max:16','min:12'],
         'enrollment_year' => ['required', 'numeric', 'digits:4'],
 
         ]);

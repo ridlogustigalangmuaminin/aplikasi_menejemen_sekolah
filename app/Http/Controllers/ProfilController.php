@@ -11,23 +11,20 @@ use Illuminate\Support\Facades\Auth;
 class ProfilController extends Controller
 {
     public function index()
-    {
-        // 1. Ambil data user yang sedang login
-        $user = Auth::user();
+{
+    $user = auth()->user();
+    
+    // 1. Menghitung data TOTAL TUGAS spesifik milik siswa yang sedang login
+    $totalTugas = Tugas::where('user_id', $user->id)->count();
+    
+    // 2. Menghitung data TUGAS SELESAI milik siswa (status_id harus bernilai 3)
+    $totalCompleted = Tugas::where('user_id', $user->id)
+                                        ->where('status_id', 3)
+                                        ->count();
 
-        // 2. Hitung total tugas yang sudah diselesaikan oleh user ini
-        // Memanfaatkan relasi status atau pencarian string 'Completed'
-        $totalCompleted = Tugas::where('user_id', $user->id)
-            ->whereHas('status', function ($q) {
-                $q->where('nama_status', 'Completed');
-            })->count();
-
-        // 3. Hitung total tugas yang dimiliki oleh user ini
-        $totalTugas = Tugas::where('user_id', $user->id)->count();
-
-        // Kirim data user dan total tugas selesai ke view profile
-        return view('profil', compact('user', 'totalCompleted', 'totalTugas'));
-    }
+    // 3. Kirim data ke view dengan nama variabel yang match/cocok dengan isi Blade
+    return view('profil', compact('user', 'totalTugas', 'totalCompleted'));
+}
 
     public function editPassword() {
     return view('auth.edit'); // atau arahkan ke view form password Anda

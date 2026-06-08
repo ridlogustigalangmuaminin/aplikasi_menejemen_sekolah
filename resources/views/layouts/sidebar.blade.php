@@ -19,8 +19,12 @@
             </a>
 
             <a href="{{ route('categories.index') }}"
-               class="btn {{ request()->routeIs('categories.*') ? 'btn-success' : 'btn-light' }} w-100 text-start mb-2">
-                <i class="bi bi-folder"></i> Categories
+            class="btn {{ request()->routeIs('categories.*') ? 'btn-success' : 'btn-light' }} w-100 text-start mb-2">
+                @if(auth()->user()->email == 'admin@gmail.com')
+                    <i class="bi bi-folder-check text-primary"></i> Kelola Kategori (Admin)
+                @else
+                    <i class="bi bi-bar-chart text"></i> Riwayat Pencapaian 
+                @endif
             </a>
 
             <a href="{{ route('profile.index') }}"

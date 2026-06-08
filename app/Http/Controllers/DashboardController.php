@@ -3,43 +3,31 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Tugas;
+use App\Models\Tugas; // Pastikan ini sesuai dengan nama model yang benar
 class DashboardController extends Controller
 {
     public function index()
 {
-    // 1. Ambil ID User yang sedang login agar guru/murid hanya melihat tugas yang relevan
+    // 1. Ambil ID User yang sedang login
     $userId = auth()->id();
 
-    // 2. Hitung total tugas milik user ini
-    $totalTugas = Tugas::where('user_id', $userId)->count();
+    // 2. Gunakan model Tugas (bukan Task, agar sinkron dengan Controller kemarin)
+    $totalTugas =Tugas::where('user_id', $userId)->count();
 
-    // 3. Hitung status "Pending" (Belum Dikerjakan)
-    $belum = Tugas::where('user_id', $userId)
-        ->whereHas('status', function ($q) {
-            $q->where('nama_status', 'Pending'); // Sesuaikan dengan teks di DB Anda
-        })->count();
+    // 3. Hitung status berdasarkan ID Status (Jauh lebih aman daripada teks string)
+    // Asumsi ID: 1 = Belum Mulai / Pending, 2 = Dikerjakan / Progress, 3 = Selesai / Completed
+    $belum = Tugas::where('user_id', $userId)->where('status_id', 1)->count();
+    $proses = Tugas::where('user_id', $userId)->where('status_id', 2)->count();
+    $selesai = Tugas::where('user_id', $userId)->where('status_id', 3)->count();
 
-    // 4. Hitung status "Progress" atau "Sedang Dikerjakan"
-    $proses = Tugas::where('user_id', $userId)
-        ->whereHas('status', function ($q) {
-            // Jika di database tulisannya 'In Progress' atau 'Progress', ganti ke tulisan itu ya!
-            $q->where('nama_status', 'Progress'); 
-        })->count();
-
-    // 5. Hitung status "Completed" (Selesai)
-    $selesai = Tugas::where('user_id', $userId)
-        ->whereHas('status', function ($q) {
-            $q->where('nama_status', 'Completed'); // Menggunakan 'Completed' sesuai tampilan tabel Anda
-        })->count();
-
-    // 6. Ambil 5 tugas terbaru milik user ini
+    // 4. Ambil 5 tugas terbaru milik user ini lengkap dengan relasi statusnya
     $recentTasks = Tugas::where('user_id', $userId)
         ->with('status')
         ->latest()
         ->take(5)
-        ->get();
+        ->get(); // Menghasilkan Object Collection, dijamin tidak void lagi
 
+    // 5. Kirimkan data ke view
     return view('dashboard', compact(
         'totalTugas',
         'belum',

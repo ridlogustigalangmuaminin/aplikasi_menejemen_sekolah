@@ -43,14 +43,21 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('categories', CategoryController::class);
 
-    Route::get('/profile', [ProfilController::class, 'index'])->name('profile.index');
+    Route::get('/categories/{id}/history', [CategoryController::class, 'showHistory'])
+        ->name('categories.history');
 
-    // 1. Jalur halaman & proses ganti password
-    Route::get('/profil/password', [ProfilController::class, 'editPassword'])->name('password.edit');
-    Route::put('/profil/password', [ProfilController::class, 'updatePassword'])->name('password.update');
+    Route::get('/profile', [ProfilController::class, 'index'])
+        ->name('profile.index');
 
-    // 2. Jalur proses menonaktifkan/menghapus akun
-    Route::delete('/profil/deactivate', [ProfilController::class, 'deactivate'])->name('profile.deactivate');
+    Route::get('/profil/password', [ProfilController::class, 'editPassword'])
+        ->name('password.edit');
+
+    Route::put('/profil/password', [ProfilController::class, 'updatePassword'])
+        ->name('password.update');
+
+    Route::delete('/profil/deactivate', [ProfilController::class, 'deactivate'])
+        ->name('profile.deactivate');
+
 });
 
 

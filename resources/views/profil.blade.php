@@ -13,39 +13,40 @@
                 
                 <div class="col-12">
                     <div class="card shadow-sm border-0 p-4 bg-white rounded-3 mb-4">
-    <div class="d-flex align-items-center gap-4">
-        
-        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" 
-             style="width: 100px; height: 100px; font-size: 2.5rem; min-width: 100px;">
-            {{ strtoupper(substr(Auth::user()->nama, 0, 2)) }}
-        </div>
+                        <div class="d-flex align-items-center gap-4">
+                            
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" 
+                                 style="width: 100px; height: 100px; font-size: 2.5rem; min-width: 100px;">
+                                {{ strtoupper(substr($user->name ?? Auth::user()->name, 0, 2)) }}
+                            </div>
 
-        <div class="flex-grow-1">
-            <h2 class="fw-bold text-dark mb-2 m-0">{{ Auth::user()->nama }}</h2>
-            
-            <span class="badge bg-light text-success border border-success px-3 py-2 rounded-pill fw-semibold">
-                <i class="bi bi-mortarboard-fill me-2"></i> 
-                {{ Auth::user()->kelas ?? 'Belum Pilih Kelas' }}
-            </span>
-        </div>
+                            <div class="flex-grow-1">
+                                <h2 class="fw-bold text-dark mb-2 m-0">{{ $user->name ?? Auth::user()->name }}</h2>
+                                
+                                <span class="badge bg-light text-success border border-success px-3 py-2 rounded-pill fw-semibold">
+                                    <i class="bi bi-mortarboard-fill me-2"></i> 
+                                    {{ $user->kelas ?? 'Belum Pilih Kelas' }}
+                                </span>
+                            </div>
 
-        <div>
-            <button class="btn btn-success rounded-3 px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm">
-                <i class="bi bi-share"></i> Bagian Profil
-            </button>
-        </div>
+                            <div>
+                                <button class="btn btn-success rounded-3 px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm">
+                                    <i class="bi bi-share"></i> Bagian Profil
+                                </button>
+                            </div>
 
-    </div>
-</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-lg-8">
                     <div class="row g-4">
                         
                         @php
+                            // Perhitungan persentase pengerjaan tugas secara real-time
                             $persentase = $totalTugas > 0 ? round(($totalCompleted / $totalTugas) * 100) : 0;
 
-                            // Logika Grade Akademik Rating dinamis berdasarkan nilai persentase
+                            // Sistem pembagian grade rating berdasarkan persentase real database
                             if ($persentase >= 90) {
                                 $grade = 'A+';
                                 $pesan = 'Luar biasa! Kamu termasuk murid paling produktif.';
@@ -134,7 +135,10 @@
                             </div>
                         </div>
 
-                    </div> </div> <div class="col-lg-4">
+                    </div> 
+                </div> 
+                
+                <div class="col-lg-4">
                     <div class="card shadow-sm border-0 p-4 bg-white rounded-3 h-100">
                         <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">
                             <i class="bi bi-gear-fill me-2 text-secondary"></i>Account Settings
@@ -156,12 +160,47 @@
                             </a>
                         </div>
                         
-                        <form action="{{ route('profile.deactivate') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan akun ini secara permanen?')" class="mt-4">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger w-100 rounded-3 py-2 fw-bold">
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-outline-danger w-100 rounded-3 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#deactivateModal">
                                 Nonaktifkan Akun
                             </button>
-                        </form>
+                        </div>
+
                     </div>
-                </div> </div> </div> </div> </div> @endsection
+                </div> 
+
+            </div> 
+        </div> 
+    </div> 
+</div>
+
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title fw-bold" id="deactivateModalLabel">⚠️ Konfirmasi Penghapusan Akun</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('profile.deactivate') }}" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body p-4 text-dark">
+                    <p class="fw-bold text-danger mb-2">Tindakan ini bersifat PERMANEN dan tidak bisa dibatalkan!</p>
+                    <p class="text-secondary small mb-3">Dengan menonaktifkan akun, seluruh riwayat pengunggahan tugas, catatan pencapaian nilai, serta berkas foto bukti Anda akan dihapus bersih dari server sekolah.</p>
+                    
+                    <div class="form-check p-3 bg-light border border-danger-subtle rounded-3">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" value="1" id="agreeCheck" required>
+                        <label class="form-check-label small fw-semibold text-danger" for="agreeCheck" style="cursor: pointer;">
+                            Saya menyatakan mengerti konsekuensi di atas dan menyetujui penghapusan akun saya secara sadar.
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-secondary rounded-3 px-3" data-bs-dismiss="modal">Batalkan</button>
+                    <button type="submit" class="btn btn-danger rounded-3 px-4 fw-bold">Ya, Hapus Akun</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
